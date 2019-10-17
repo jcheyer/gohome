@@ -1,6 +1,7 @@
 package gohome
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-resty/resty/v2"
@@ -56,9 +57,15 @@ func WithPing() Option {
 }
 
 func (c *Client) Ping() error {
-	_, err := c.resty.R().Get("/api")
-	/*if err != nil {
+	resp, err := c.resty.R().Get("/api/")
+
+	if err != nil {
 		return err
-	}*/
-	return err
+	}
+
+	if resp.StatusCode() != 200 {
+		return errors.New(string(resp.Body()))
+	}
+
+	return nil
 }
