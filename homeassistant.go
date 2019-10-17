@@ -30,7 +30,8 @@ func New(options ...Option) (*Client, error) {
 		c.resty = resty.New()
 	}
 
-	c.resty.SetHostURL(c.host)
+	c.resty.SetHostURL(c.host).SetHeader("Content-Type", "application/json")
+
 	if c.authToken != "" {
 		c.resty.SetAuthToken(c.authToken)
 	}
