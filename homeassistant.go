@@ -79,3 +79,7 @@ func (c *Client) Ping() error {
 
 	return nil
 }
+
+func (c *Client) SetDebug(d bool) {
+	c.resty.SetDebug(d)
+}
