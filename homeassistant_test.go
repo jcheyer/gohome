@@ -33,6 +33,7 @@ func TestNew(t *testing.T) {
 		WithHost(testURL),
 		WithPing(),
 		WithAuthToken(testToken),
+		NoDiscovery(),
 	)
 
 	assert.NoError(t, err)
@@ -46,7 +47,9 @@ func TestNew(t *testing.T) {
 	_, err = New(
 		WithClient(hc),
 		WithHost(testURL),
-		WithPing())
+		WithPing(),
+		NoDiscovery(),
+	)
 
 	assert.Error(t, err)
 	assert.Equal(t, "401: Unauthorized", err.Error())
@@ -58,8 +61,31 @@ func TestNew(t *testing.T) {
 	_, err = New(
 		WithClient(hc),
 		WithHost(testURL),
-		WithPing())
+		WithPing(),
+		NoDiscovery(),
+	)
 
 	assert.Error(t, err)
 	assert.Equal(t, "Get http://test.domain/api/: Bad Error", err.Error())
+}
+
+func TestDiscovery(t *testing.T) {
+	hc := new(http.Client)
+
+	defer gock.Off()
+	gock.InterceptClient(hc)
+
+	gock.New("http://hassio.local").
+		Get("/api/discovery_info").
+		MatchType("json").
+		Reply(200).
+		SetHeader("Content-Type", "application/json").
+		File("testdata/discovery.json")
+
+	client, err := New(
+		WithClient(hc),
+	)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "0.100.2", client.discoveryInfo.Version)
 }

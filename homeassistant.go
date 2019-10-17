@@ -8,18 +8,21 @@ import (
 )
 
 type Client struct {
-	authToken     string
-	host          string
-	pingOnStartup bool
-	resty         *resty.Client
+	authToken         string
+	host              string
+	pingOnStartup     bool
+	discoverOnStartup bool
+	discoveryInfo     discoveryInfo
+	resty             *resty.Client
 }
 
 type Option func(*Client)
 
 func New(options ...Option) (*Client, error) {
 	c := &Client{
-		host:          "http://hassio.local:8123",
-		pingOnStartup: false,
+		host:              "http://hassio.local:8123",
+		pingOnStartup:     false,
+		discoverOnStartup: true,
 	}
 
 	for _, option := range options {
@@ -32,8 +35,19 @@ func New(options ...Option) (*Client, error) {
 
 	c.resty.SetHostURL(c.host).SetHeader("Content-Type", "application/json")
 
+	if c.discoverOnStartup {
+		err := c.discover()
+		if err != nil {
+			return c, err
+		}
+	}
+
 	if c.authToken != "" {
 		c.resty.SetAuthToken(c.authToken)
+	}
+
+	if c.discoveryInfo.RequiresAPIPassword && c.authToken == "" {
+		return c, errors.New("requires auth but no auth token set")
 	}
 
 	if c.pingOnStartup {
@@ -41,6 +55,12 @@ func New(options ...Option) (*Client, error) {
 	}
 
 	return c, nil
+}
+
+func NoDiscovery() Option {
+	return func(c *Client) {
+		c.discoverOnStartup = false
+	}
 }
 
 func WithClient(hc *http.Client) Option {
@@ -83,4 +103,31 @@ func (c *Client) Ping() error {
 
 func (c *Client) SetDebug(d bool) {
 	c.resty.SetDebug(d)
+}
+
+func (c *Client) discover() error {
+	resp, err := c.resty.R().
+		SetResult(&discoveryInfo{}).
+		Get("/api/discovery_info")
+	if err != nil {
+		return err
+	}
+
+	disco := resp.Result().(*discoveryInfo)
+	c.discoveryInfo = *disco
+
+	return nil
+}
+
+func (c *Client) Version() string {
+	var err error
+	if c.discoveryInfo.Version == "" {
+		err = c.discover()
+	}
+
+	if err != nil {
+		return ""
+	}
+
+	return c.discoveryInfo.Version
 }

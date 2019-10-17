@@ -1,0 +1,6 @@
+{
+  "base_url": "http://hassio.local",
+  "location_name": "TestServer",
+  "requires_api_password": false,
+  "version": "0.100.2"
+}
