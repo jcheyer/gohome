@@ -11,7 +11,10 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	testURL := "http://test.domain"
+	var (
+		testURL   = "http://test.domain"
+		testToken = "mySecretToken"
+	)
 	hc := new(http.Client)
 
 	defer gock.Off()
@@ -19,13 +22,16 @@ func TestNew(t *testing.T) {
 
 	gock.New(testURL).
 		Get("/api/").
+		MatchHeader("Authorization", "^Bearer "+testToken).
 		Reply(200).
 		JSON(map[string]string{"message": "API running."})
 
 	client, err := New(
 		WithClient(hc),
 		WithHost(testURL),
-		WithPing())
+		WithPing(),
+		WithAuthToken(testToken),
+	)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, client)

@@ -8,6 +8,7 @@ import (
 )
 
 type Client struct {
+	authToken     string
 	host          string
 	pingOnStartup bool
 	resty         *resty.Client
@@ -30,6 +31,9 @@ func New(options ...Option) (*Client, error) {
 	}
 
 	c.resty.SetHostURL(c.host)
+	if c.authToken != "" {
+		c.resty.SetAuthToken(c.authToken)
+	}
 
 	if c.pingOnStartup {
 		return c, c.Ping()
@@ -53,6 +57,12 @@ func WithHost(h string) Option {
 func WithPing() Option {
 	return func(c *Client) {
 		c.pingOnStartup = true
+	}
+}
+
+func WithAuthToken(token string) Option {
+	return func(c *Client) {
+		c.authToken = token
 	}
 }
 
